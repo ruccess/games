@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스피드 게임</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f8ff;
+      color: #007acc;
+    }
+    header {
+      background-color: #007acc;
+      color: white;
+      padding: 20px 0;
+    }
+    button {
+      background-color: #007acc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    #game-container {
+      display: none;
+      margin-top: 20px;
+    }
+    #word-display {
+      font-size: 2em;
+      margin: 20px 0;
+    }
+    #image-display {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #image-display img {
+      width: 300px;
+      height: 400px;
+      margin: 10px;
+      transition: transform 0.3s;
+    }
+    #image-display img:hover {
+      transform: scale(1.05);
+    }
+    #timer, #game-timer {
+      position: fixed;
+      bottom: 20px;
+      background-color: #007acc;
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 1.5em;
+    }
+    #timer {
+      right: 20px;
+    }
+    #game-timer {
+      left: 20px;
+    }
+    @media (max-width: 600px) {
+      #image-display img {
+        width: 100%;
+        height: auto;
+      }
+    }
+    .score-display {
+      font-size: 3em;
+      animation: fadeIn 2s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>스피드 게임</h1>
+  </header>
+  <div id="settings-container">
+    <label for="game-duration">게임 시간 설정:</label>
+    <select id="game-duration">
+      <option value="60">1분</option>
+      <option value="120">2분</option>
+      <option value="180">3분</option>
+    </select>
+    <button onclick="startGame()">시작하기</button>
+  </div>
+  <div id="game-container">
+    <button onclick="showRandomWord()">랜덤 제시어</button>
+    <div id="word-display"></div>
+    <button onclick="showImages(true)">이미지 순서대로</button>
+    <button onclick="showImages(false)">이미지 랜덤으로</button>
+    <div id="image-display"></div>
+  </div>
+  <div id="timer">00:00</div>
+  <div id="game-timer">00:00</div>
+
+  <script>
+    let words = [];
+    let timerInterval;
+    let gameTimerInterval;
+    let timerSeconds = 0;
+    let gameDuration = 60;
+    let score = 0;
+
+    fetch('words.json')
+      .then(response => response.json())
+      .then(data => {
+        words = data.words;
+      });
+
+    function startGame() {
+      document.getElementById('settings-container').style.display = 'none';
+      document.getElementById('game-container').style.display = 'block';
+
+      gameDuration = parseInt(document.getElementById('game-duration').value);
+      resetTimer();
+      startGameTimer();
+    }
+
+    function showRandomWord() {
+      const randomIndex = Math.floor(Math.random() * words.length);
+      document.getElementById('word-display').innerText = words[randomIndex];
+      score++;
+      resetTimer();
+    }
+
+    function showImages(inOrder) {
+      const imageDisplay = document.getElementById('image-display');
+      imageDisplay.innerHTML = '';
+
+      const images = [
+        'images/movie1.jpg',
+        'images/movie2.jpg',
+        'images/person1.jpg',
+        'images/person2.jpg'
+      ];
+
+      if (!inOrder) {
+        for (let i = images.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [images[i], images[j]] = [images[j], images[i]];
+        }
+      }
+
+      images.forEach(image => {
+        const img = document.createElement('img');
+        img.src = image;
+        imageDisplay.appendChild(img);
+      });
+
+      score++;
+      resetTimer();
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerSeconds = 0;
+      document.getElementById('timer').innerText = '00:00';
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+      timerSeconds++;
+      const minutes = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const seconds = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+    }
+
+    function startGameTimer() {
+      let gameSecondsRemaining = gameDuration;
+
+      document.getElementById('game-timer').innerText = formatTime(gameSecondsRemaining);
+      gameTimerInterval = setInterval(() => {
+        gameSecondsRemaining--;
+        document.getElementById('game-timer').innerText = formatTime(gameSecondsRemaining);
+        
+        if (gameSecondsRemaining <= 0) {
+          clearInterval(gameTimerInterval);
+          clearInterval(timerInterval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
+      return `${minutes}:${remainingSeconds}`;
+    }
+
+    function endGame() {
+      document.getElementById('game-container').innerHTML = `<div class="score-display">점수: ${score}</div>`;
+    }
+  </script>
+</body>
+</html>
